@@ -36,7 +36,7 @@
       radial-gradient(ellipse at 80% 100%, rgba(0, 240, 200, 0.08), transparent 50%),
       linear-gradient(180deg, #06080a 0%, #0a0f14 100%);
     background-size: 40px 40px, 40px 40px, 100% 100%, 100% 100%, 100% 100%;
-    padding: 20px 16px 60px;
+    padding: 42px 16px 50px;
     position: relative;
   }
   body::before {
@@ -639,14 +639,7 @@
     animation: sweep 4s linear infinite;
   }
   .radar-sweep::before {
-    content: "";
-    position: absolute;
-    top: -90px;
-    left: 0;
-    width: 100%;
-    height: 180px;
-    background: conic-gradient(from 0deg, rgba(0,240,200,0.3), transparent 45deg);
-    transform-origin: 0 50%;
+    display: none;
   }
   @keyframes sweep {
     from { transform: rotate(0deg); }
@@ -1255,7 +1248,7 @@ const ENTRIES = [
   { title: "Mad Max: Fury Road", year: "2015", series: ["Mad Max (1979)", "Mad Max 2: The Road Warrior (1981)", "Mad Max Beyond Thunderdome (1985)", "Mad Max: Fury Road (2015)", "Furiosa: A Mad Max Saga (2024)"] },
   { title: "V for Vendetta", year: "2005" },
   { title: "Elysium", year: "2013" },
-  { title: "The Fifth Element", year: "1997" },
+  { title: "They Live", year: "1988" },
   { title: "The Terminator", year: "1984", series: ["The Terminator (1984)", "Terminator 2: Judgment Day (1991)", "Terminator 3: Rise of the Machines (2003)", "Terminator Salvation (2009)", "Terminator Genisys (2015)", "Terminator: Dark Fate (2019)"] },
   { title: "The Road", year: "2009" },
   { title: "Fahrenheit 451", year: "1966" },
@@ -1277,7 +1270,7 @@ const ENTRIES = [
   { title: "The Blood of Heroes", year: "1989" },
   { title: "Æon Flux", year: "2005" },
   { title: "The Postman", year: "1997" },
-  { title: "X-Men: Days of Future Past", year: "2014", series: ["X-Men: Days of Future Past (2014)", "X-Men: Apocalypse (2016)", "Logan (2017)"] },
+  { title: "Ex Machina", year: "2014" },
   { title: "Starship Troopers", year: "1997" },
   { title: "The Lathe of Heaven", year: "1980" },
   { title: "Surrogates", year: "2009" },
@@ -1420,6 +1413,111 @@ function resolveSeries() {
 
 spinBtn.addEventListener("click", spin);
 seriesBtn.addEventListener("click", resolveSeries);
+
+// ============ IMMERSION ENGINE ============
+const TICKER_ITEMS = [
+  "SECTOR-7 PERIMETER <b>SECURE</b>",
+  "<i>CURFEW EXTENDED</i> // ALL CITIZENS REPORT TO BUNKS BY 21:00",
+  "RATION ALLOCATION DECREASED BY <b>12%</b>",
+  "<i>THOUGHTCRIME ALERT</i> // SUBJECT 4471-K APPREHENDED",
+  "WEATHER: ACID PARTICULATES <b>HIGH</b> // RESPIRATORS MANDATORY",
+  "MEMORY-WIPE PROTOCOL ACTIVE IN ZONES 3, 7, 11",
+  "<i>DREAMS BANNED THIS WEEK</i> // SLEEP MODULES UPDATING",
+  "MINISTRY OF TRUTH BROADCAST AT <b>19:00</b>",
+  "BLACK-MARKET VITAMINS <b>CONFISCATED</b> // 47 CITIZENS REASSIGNED",
+  "<i>LOYALTY SCORES PUBLISHED</i> // CHECK YOUR TERMINAL",
+  "REPRODUCTIVE LICENSES SUSPENDED FOR <b>NON-COMPLIANT</b> CASTES",
+  "SYNTHETIC PROTEIN VAT-12 <b>QUARANTINED</b>",
+  "<i>MEMORY MERCHANTS OPERATING IN UNDERCITY</i> // BOUNTY ISSUED",
+  "DRONE PATROL DENSITY +<b>34%</b> THIS QUARTER",
+  "OXYGEN TAX ADJUSTMENT EFFECTIVE <b>06:00</b> TOMORROW",
+  "<i>OBEY</i> // <i>CONSUME</i> // <i>CONFORM</i> // <i>SLEEP</i>",
+];
+
+function buildTicker(elId) {
+  const el = document.getElementById(elId);
+  // duplicate to allow seamless loop
+  const items = [...TICKER_ITEMS, ...TICKER_ITEMS];
+  el.innerHTML = items.map(t => `<span>◆ ${t}</span>`).join("");
+}
+buildTicker("topTicker");
+buildTicker("botTicker");
+
+// Vitals — fluctuating numbers
+const vHr = document.getElementById("vHr");
+const vNl = document.getElementById("vNl");
+const vCt = document.getElementById("vCt");
+const vO2 = document.getElementById("vO2");
+const vCp = document.getElementById("vCp");
+function updateVitals() {
+  const hr = 68 + Math.floor(Math.random() * 14);
+  const nl = 72 + Math.floor(Math.random() * 18);
+  const ct = (36.4 + Math.random() * 0.8).toFixed(1);
+  const o2 = 94 + Math.floor(Math.random() * 5);
+  vHr.textContent = `${hr} BPM`;
+  vNl.textContent = `${nl} %`;
+  vCt.textContent = `${ct} °C`;
+  vO2.textContent = `${o2} %`;
+  // occasional compliance fluctuation
+  const states = ["NOMINAL", "NOMINAL", "NOMINAL", "ELEVATED", "FLAGGED"];
+  vCp.textContent = states[Math.floor(Math.random() * states.length)];
+  vCp.style.color = vCp.textContent === "FLAGGED" ? "var(--blood)" :
+                    vCp.textContent === "ELEVATED" ? "var(--amber)" : "var(--cyan)";
+}
+updateVitals();
+setInterval(updateVitals, 1800);
+
+// Command log — feed new lines occasionally
+const LOG_MESSAGES = [
+  { text: "citizen 0x4f scan complete", cls: "" },
+  { text: "thought-net sync OK", cls: "ok" },
+  { text: "dissent vector detected", cls: "warn" },
+  { text: "memory wipe queued", cls: "" },
+  { text: "drone-7 returning to dock", cls: "" },
+  { text: "compliance check passed", cls: "ok" },
+  { text: "anomaly in sector 11", cls: "warn" },
+  { text: "rerouting power grid", cls: "" },
+  { text: "BREACH ATTEMPT BLOCKED", cls: "err" },
+  { text: "biometric match: confirmed", cls: "ok" },
+  { text: "loyalty score updated", cls: "" },
+  { text: "ration packet dispatched", cls: "" },
+  { text: "subject 9981 sedated", cls: "warn" },
+  { text: "neural feed re-encrypted", cls: "" },
+  { text: "purge protocol on standby", cls: "err" },
+  { text: "audio surveillance live", cls: "" },
+  { text: "dream-recorder full", cls: "warn" },
+];
+const logLines = document.getElementById("logLines");
+let logCounter = 4;
+function addLog() {
+  const msg = LOG_MESSAGES[Math.floor(Math.random() * LOG_MESSAGES.length)];
+  const ts = String(logCounter++).padStart(2, "0");
+  const div = document.createElement("div");
+  div.className = `${msg.cls} new`;
+  div.textContent = `[00:${ts}] ${msg.text}`;
+  logLines.appendChild(div);
+  // keep only last 6 lines
+  while (logLines.children.length > 6) logLines.removeChild(logLines.firstChild);
+}
+setInterval(addLog, 2200);
+
+// ASCII rain
+const RAIN_CHARS = "01アイウエオカキクケコサシスセソタチツテトナニヌネノ░▒▓█┃┓┛◆◇○●";
+function buildRain(elId, lines) {
+  const el = document.getElementById(elId);
+  let s = "";
+  for (let i = 0; i < lines; i++) {
+    s += RAIN_CHARS[Math.floor(Math.random() * RAIN_CHARS.length)] + "<br>";
+  }
+  el.innerHTML = s + s; // double for loop
+}
+buildRain("rainL", 80);
+buildRain("rainR", 80);
+// occasionally regenerate so it changes
+setInterval(() => {
+  buildRain("rainL", 80);
+  buildRain("rainR", 80);
+}, 8000);
 </script>
 </body>
 </html>
