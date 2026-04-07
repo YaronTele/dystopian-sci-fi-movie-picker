@@ -1,0 +1,1425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dystopian Sci-Fi Movie Picker</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Major+Mono+Display&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #06080a;
+    --bg-2: #0a0f14;
+    --grid: rgba(0, 255, 200, 0.04);
+    --cyan: #00f0c8;
+    --cyan-dim: #00a088;
+    --magenta: #ff2e7e;
+    --amber: #ffb000;
+    --blood: #ff003c;
+    --steel: #2a3540;
+    --steel-light: #4a5560;
+    --bone: #c8d4dc;
+    --bone-dim: #6a7a85;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--bg);
+    color: var(--bone);
+    font-family: 'Share Tech Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  body {
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+      radial-gradient(ellipse at 20% 0%, rgba(255, 46, 126, 0.08), transparent 50%),
+      radial-gradient(ellipse at 80% 100%, rgba(0, 240, 200, 0.08), transparent 50%),
+      linear-gradient(180deg, #06080a 0%, #0a0f14 100%);
+    background-size: 40px 40px, 40px 40px, 100% 100%, 100% 100%, 100% 100%;
+    padding: 20px 16px 60px;
+    position: relative;
+  }
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,0) 0, rgba(0,0,0,0) 2px, rgba(0,0,0,0.18) 3px, rgba(0,0,0,0) 4px);
+    pointer-events: none;
+    z-index: 200;
+    mix-blend-mode: multiply;
+  }
+  body::after {
+    content: "";
+    position: fixed; inset: 0;
+    background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.6) 100%);
+    pointer-events: none;
+    z-index: 199;
+  }
+  .top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid var(--cyan-dim);
+    background: rgba(0, 240, 200, 0.04);
+    padding: 6px 14px;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    margin-bottom: 18px;
+  }
+  .top-bar::before {
+    content: "● REC";
+    color: var(--blood);
+    animation: pulse 1.5s infinite;
+  }
+  .top-bar .ts { color: var(--bone-dim); }
+  .top-bar .stat { color: var(--amber); }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+  header {
+    text-align: center;
+    margin-bottom: 14px;
+  }
+  .system-id {
+    font-family: 'Major Mono Display', monospace;
+    font-size: 10px;
+    color: var(--magenta);
+    letter-spacing: 0.4em;
+    margin-bottom: 8px;
+    text-shadow: 0 0 8px var(--magenta);
+  }
+  h1 {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 900;
+    font-size: clamp(28px, 6.5vw, 56px);
+    line-height: 0.95;
+    letter-spacing: 0.02em;
+    color: var(--cyan);
+    text-shadow: 0 0 4px var(--cyan), 0 0 12px rgba(0,240,200,0.6), 2px 0 0 var(--magenta), -2px 0 0 rgba(0,240,255,0.5);
+    text-transform: uppercase;
+    display: inline-block;
+  }
+  h1 .slash { color: var(--magenta); text-shadow: 0 0 8px var(--magenta); }
+  .tagline {
+    margin-top: 10px;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    color: var(--bone-dim);
+    text-transform: uppercase;
+    border-top: 1px dashed var(--steel);
+    border-bottom: 1px dashed var(--steel);
+    padding: 6px 0;
+    max-width: 540px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .tagline span { color: var(--amber); }
+  .stage {
+    position: relative;
+    width: min(92vw, 580px);
+    aspect-ratio: 1;
+    margin: 24px auto 16px;
+  }
+  .stage::before, .stage::after, .bracket-bl, .bracket-br {
+    content: "";
+    position: absolute;
+    width: 28px; height: 28px;
+    border: 2px solid var(--cyan);
+    box-shadow: 0 0 8px rgba(0,240,200,0.5);
+  }
+  .stage::before { top: -8px; left: -8px; border-right: none; border-bottom: none; }
+  .stage::after { top: -8px; right: -8px; border-left: none; border-bottom: none; }
+  .bracket-bl { bottom: -8px; left: -8px; border-right: none; border-top: none; }
+  .bracket-br { bottom: -8px; right: -8px; border-left: none; border-top: none; }
+  .pointer-housing {
+    position: absolute;
+    top: -22px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 8;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .pointer-light {
+    width: 10px; height: 10px;
+    background: var(--blood);
+    border-radius: 50%;
+    box-shadow: 0 0 16px var(--blood), 0 0 4px #fff inset;
+    animation: pulse 1s infinite;
+    margin-bottom: 2px;
+  }
+  .pointer {
+    width: 0; height: 0;
+    border-left: 16px solid transparent;
+    border-right: 16px solid transparent;
+    border-top: 36px solid var(--magenta);
+    filter: drop-shadow(0 0 8px rgba(255,46,126,0.8));
+  }
+  .wheel-wrap {
+    position: relative;
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    background: radial-gradient(circle at center, #0a0f14, #050709);
+    box-shadow:
+      0 0 0 2px var(--steel),
+      0 0 0 4px #000,
+      0 0 0 6px var(--cyan-dim),
+      0 0 0 8px #000,
+      0 0 0 14px var(--steel),
+      0 0 40px rgba(0,240,200,0.3),
+      0 0 80px rgba(255,46,126,0.15),
+      inset 0 0 60px rgba(0,0,0,0.8);
+  }
+  .bolt {
+    position: absolute;
+    width: 8px; height: 8px;
+    background: radial-gradient(circle at 35% 35%, var(--steel-light), #1a2028);
+    border-radius: 50%;
+    border: 1px solid #000;
+    z-index: 6;
+  }
+  .wheel {
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    transition: transform 6.5s cubic-bezier(0.15, 0.85, 0.15, 1);
+    transform-origin: center;
+  }
+  .hub {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 130px; height: 130px;
+    border-radius: 50%;
+    z-index: 5;
+    pointer-events: none;
+  }
+  .hub svg {
+    width: 100%;
+    height: 100%;
+    filter:
+      drop-shadow(0 0 14px rgba(255, 0, 60, 0.45))
+      drop-shadow(0 0 24px rgba(0, 240, 200, 0.3));
+  }
+  @keyframes dilate {
+    0%, 100% { transform: scale(1); }
+    45% { transform: scale(1.15); }
+    50% { transform: scale(0.7); }
+    55% { transform: scale(1.15); }
+  }
+  @keyframes veinPulse {
+    0%, 100% { opacity: 0.55; }
+    50% { opacity: 1; }
+  }
+  @keyframes nerveTwitch {
+    0%, 92%, 100% { transform: rotate(0deg); }
+    94% { transform: rotate(2deg); }
+    96% { transform: rotate(-1.5deg); }
+    98% { transform: rotate(1deg); }
+  }
+  @keyframes bloodFlow {
+    to { stroke-dashoffset: -20; }
+  }
+  .pupil { transform-origin: center; transform-box: fill-box; animation: dilate 7s infinite; }
+  .vein { animation: veinPulse 2.4s ease-in-out infinite; }
+  .vein.delay { animation-delay: 0.6s; }
+  .vein.delay2 { animation-delay: 1.2s; }
+  .nerve-group { transform-origin: center; transform-box: fill-box; animation: nerveTwitch 5s infinite; }
+  .blood-line {
+    stroke-dasharray: 3 3;
+    animation: bloodFlow 1.2s linear infinite;
+  }
+  /* Germs: each crawls a different elliptical path around the eye,
+     while squirming/wriggling its body in place via nested transform. */
+  @keyframes crawl1 {
+    0%   { transform: rotate(0deg)   translateX(48px) rotate(0deg); }
+    100% { transform: rotate(360deg) translateX(48px) rotate(-360deg); }
+  }
+  @keyframes crawl2 {
+    0%   { transform: rotate(0deg)   translateX(54px) rotate(0deg); }
+    100% { transform: rotate(-360deg) translateX(54px) rotate(360deg); }
+  }
+  @keyframes crawl3 {
+    0%   { transform: rotate(0deg)   translateX(44px) rotate(0deg); }
+    100% { transform: rotate(360deg) translateX(44px) rotate(-360deg); }
+  }
+  @keyframes crawl4 {
+    0%   { transform: rotate(0deg)   translateX(58px) rotate(0deg); }
+    100% { transform: rotate(-360deg) translateX(58px) rotate(360deg); }
+  }
+  @keyframes crawl5 {
+    0%   { transform: rotate(0deg)   translateX(50px) rotate(0deg); }
+    100% { transform: rotate(360deg) translateX(50px) rotate(-360deg); }
+  }
+  /* Squirming body — squash/stretch and wobble */
+  @keyframes squirm {
+    0%, 100% { transform: scale(1, 1)   skewX(0deg); }
+    15%      { transform: scale(1.3, 0.7) skewX(-8deg); }
+    30%      { transform: scale(0.7, 1.3) skewX(6deg); }
+    45%      { transform: scale(1.2, 0.85) skewX(-4deg); }
+    60%      { transform: scale(0.85, 1.2) skewX(5deg); }
+    75%      { transform: scale(1.15, 0.9) skewX(-3deg); }
+  }
+  @keyframes squirm2 {
+    0%, 100% { transform: scale(1, 1)   skewY(0deg); }
+    20%      { transform: scale(0.6, 1.4) skewY(8deg); }
+    40%      { transform: scale(1.3, 0.7) skewY(-6deg); }
+    60%      { transform: scale(0.8, 1.2) skewY(4deg); }
+    80%      { transform: scale(1.2, 0.85) skewY(-5deg); }
+  }
+  /* Flagella tails whipping */
+  @keyframes whip {
+    0%, 100% { transform: rotate(-20deg); }
+    50%      { transform: rotate(20deg); }
+  }
+  .germ {
+    transform-origin: center;
+    transform-box: fill-box;
+  }
+  .germ-wrap-1 { transform-origin: 0 0; animation: crawl1 11s linear infinite; }
+  .germ-wrap-2 { transform-origin: 0 0; animation: crawl2 14s linear infinite; }
+  .germ-wrap-3 { transform-origin: 0 0; animation: crawl3 9s  linear infinite; }
+  .germ-wrap-4 { transform-origin: 0 0; animation: crawl4 16s linear infinite; }
+  .germ-wrap-5 { transform-origin: 0 0; animation: crawl5 12s linear infinite; }
+  .germ-body-a { animation: squirm  1.1s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+  .germ-body-b { animation: squirm2 0.9s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+  .germ-body-c { animation: squirm  1.4s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+  .germ-tail   { animation: whip    0.6s ease-in-out infinite; transform-origin: 0 50%; transform-box: fill-box; }
+  .controls {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin: 18px auto 26px;
+    flex-wrap: wrap;
+    max-width: 600px;
+  }
+  button {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-weight: 700;
+    background: linear-gradient(180deg, #0a1418, #050a0d);
+    color: var(--cyan);
+    border: 1px solid var(--cyan);
+    padding: 16px 28px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-shadow: 0 0 6px rgba(0,240,200,0.6);
+    box-shadow: 0 0 0 1px #000 inset, 0 0 12px rgba(0,240,200,0.3), 0 4px 0 #000;
+    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+  }
+  button::before { content: ">> "; color: var(--magenta); }
+  button:hover {
+    background: linear-gradient(180deg, #0d1d22, #081218);
+    box-shadow: 0 0 0 1px #000 inset, 0 0 24px rgba(0,240,200,0.6), 0 4px 0 #000;
+    color: #fff;
+  }
+  button:active { transform: translateY(2px); }
+  button.danger {
+    color: var(--magenta);
+    border-color: var(--magenta);
+    text-shadow: 0 0 6px rgba(255,46,126,0.6);
+    box-shadow: 0 0 0 1px #000 inset, 0 0 12px rgba(255,46,126,0.3), 0 4px 0 #000;
+  }
+  button.danger::before { color: var(--cyan); }
+  button.danger:hover {
+    box-shadow: 0 0 0 1px #000 inset, 0 0 24px rgba(255,46,126,0.6), 0 4px 0 #000;
+  }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .terminal {
+    max-width: 640px;
+    margin: 0 auto;
+    background: rgba(0,0,0,0.7);
+    border: 1px solid var(--cyan-dim);
+    box-shadow: 0 0 20px rgba(0,240,200,0.15), inset 0 0 40px rgba(0,240,200,0.03);
+  }
+  .terminal-header {
+    background: linear-gradient(180deg, #0d1418, #060a0c);
+    border-bottom: 1px solid var(--cyan-dim);
+    padding: 6px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--cyan-dim);
+  }
+  .terminal-header .dots { display: flex; gap: 4px; }
+  .terminal-header .dots span {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--steel);
+  }
+  .terminal-header .dots span.live { background: var(--blood); box-shadow: 0 0 6px var(--blood); }
+  .terminal-body {
+    padding: 28px 24px 32px;
+    text-align: center;
+    min-height: 180px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+  .terminal-body .prompt {
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: var(--magenta);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    text-shadow: 0 0 8px rgba(255,46,126,0.5);
+  }
+  .terminal-body .prompt::before { content: "[ "; color: var(--cyan-dim); }
+  .terminal-body .prompt::after { content: " ]"; color: var(--cyan-dim); }
+  .terminal-body .title {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    font-size: clamp(22px, 4.5vw, 38px);
+    line-height: 1.1;
+    color: var(--cyan);
+    text-shadow: 0 0 6px var(--cyan), 0 0 18px rgba(0,240,200,0.5);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+  .terminal-body .meta {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    color: var(--amber);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .terminal-body .meta::before { content: "// "; color: var(--bone-dim); }
+  .terminal.empty .title { color: var(--steel-light); text-shadow: none; opacity: 0.5; }
+  .terminal.empty .meta { color: var(--bone-dim); }
+
+  /* Edge iconography */
+  .edge {
+    position: fixed;
+    top: 0;
+    height: 100vh;
+    width: 64px;
+    pointer-events: none;
+    z-index: 150;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    padding: 30px 0;
+    opacity: 0.55;
+  }
+  .edge.left { left: 0; }
+  .edge.right { right: 0; }
+  .edge svg {
+    width: 36px;
+    height: 36px;
+    color: var(--cyan-dim);
+    filter: drop-shadow(0 0 6px rgba(0, 240, 200, 0.4));
+  }
+  .edge .icon-magenta { color: var(--magenta); filter: drop-shadow(0 0 6px rgba(255, 46, 126, 0.4)); }
+  .edge .icon-amber { color: var(--amber); filter: drop-shadow(0 0 6px rgba(255, 176, 0, 0.4)); }
+  .edge .icon-blood { color: var(--blood); filter: drop-shadow(0 0 6px rgba(255, 0, 60, 0.5)); }
+  .edge .vbar {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    color: var(--bone-dim);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .edge .barcode {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    width: 28px;
+  }
+  .edge .barcode span {
+    height: 2px;
+    background: var(--bone-dim);
+    display: block;
+  }
+  @keyframes blink-slow {
+    0%, 90%, 100% { opacity: 1; }
+    95% { opacity: 0.2; }
+  }
+  .edge .blink { animation: blink-slow 4s infinite; }
+  @media (max-width: 720px) {
+    .edge { width: 38px; padding: 16px 0; opacity: 0.4; }
+    .edge svg { width: 22px; height: 22px; }
+    .edge .vbar { font-size: 7px; }
+    .edge .barcode { width: 18px; }
+  }
+  @keyframes glitch {
+    0%, 100% { transform: translate(0); }
+    20% { transform: translate(-2px, 1px); }
+    40% { transform: translate(2px, -1px); }
+    60% { transform: translate(-1px, -1px); }
+    80% { transform: translate(1px, 1px); }
+  }
+  .terminal.revealed .title { animation: glitch 0.3s ease-out; }
+  .footer-bar {
+    max-width: 640px;
+    margin: 20px auto 0;
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--bone-dim);
+    border-top: 1px dashed var(--steel);
+    padding-top: 10px;
+  }
+  .footer-bar .right { color: var(--magenta); }
+  @media (max-width: 480px) {
+    .stage { margin: 16px auto 12px; }
+    button { padding: 14px 18px; font-size: 11px; }
+    .top-bar { font-size: 9px; padding: 5px 10px; }
+  }
+
+  /* ============ IMMERSION LAYER ============ */
+  .imm {
+    position: fixed;
+    z-index: 140;
+    pointer-events: none;
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--cyan-dim);
+    text-transform: uppercase;
+  }
+
+  /* Top status ticker bar */
+  .ticker-bar {
+    top: 0; left: 0; right: 0;
+    height: 22px;
+    background: linear-gradient(180deg, rgba(10,20,24,0.95), rgba(5,10,12,0.9));
+    border-bottom: 1px solid var(--cyan-dim);
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    box-shadow: 0 0 20px rgba(0,240,200,0.2);
+  }
+  .ticker-bar::before {
+    content: "● LIVE FEED";
+    color: var(--blood);
+    padding: 0 14px;
+    border-right: 1px solid var(--steel);
+    flex-shrink: 0;
+    animation: pulse 1.5s infinite;
+    text-shadow: 0 0 6px var(--blood);
+  }
+  .ticker-track {
+    display: flex;
+    animation: tickerScroll 80s linear infinite;
+    white-space: nowrap;
+    padding-left: 14px;
+  }
+  .ticker-track span {
+    margin-right: 50px;
+    color: var(--bone-dim);
+  }
+  .ticker-track span b {
+    color: var(--amber);
+    font-weight: normal;
+  }
+  .ticker-track span i {
+    color: var(--magenta);
+    font-style: normal;
+  }
+  @keyframes tickerScroll {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  /* Bottom ticker - reversed */
+  .ticker-bar.bottom {
+    top: auto; bottom: 0;
+    border-bottom: none;
+    border-top: 1px solid var(--cyan-dim);
+  }
+  .ticker-bar.bottom::before {
+    content: "▲ TRANSMISSION";
+    color: var(--amber);
+    text-shadow: 0 0 6px var(--amber);
+    animation: none;
+  }
+  .ticker-bar.bottom .ticker-track {
+    animation: tickerScroll 100s linear infinite reverse;
+  }
+
+  /* Top-left HUD: vitals monitor */
+  .hud-vitals {
+    top: 38px;
+    left: 80px;
+    width: 200px;
+    background: rgba(0,0,0,0.7);
+    border: 1px solid var(--cyan-dim);
+    padding: 10px 12px;
+    box-shadow: 0 0 20px rgba(0,240,200,0.15), inset 0 0 30px rgba(0,240,200,0.04);
+  }
+  .hud-vitals .h {
+    font-size: 9px;
+    color: var(--magenta);
+    letter-spacing: 0.2em;
+    margin-bottom: 8px;
+    border-bottom: 1px dashed var(--steel);
+    padding-bottom: 6px;
+    text-shadow: 0 0 6px rgba(255,46,126,0.4);
+  }
+  .hud-vitals .row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    margin: 4px 0;
+    color: var(--bone-dim);
+  }
+  .hud-vitals .row b {
+    color: var(--cyan);
+    font-weight: normal;
+  }
+  .hud-vitals .ekg {
+    margin-top: 8px;
+    height: 30px;
+    background: #050709;
+    border: 1px solid #1a2530;
+    overflow: hidden;
+    position: relative;
+  }
+  .hud-vitals .ekg svg { width: 100%; height: 100%; }
+  @keyframes ekgScroll {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  .ekg-line { animation: ekgScroll 3s linear infinite; }
+
+  /* Top-right HUD: radar */
+  .hud-radar {
+    top: 38px;
+    right: 80px;
+    width: 180px;
+    height: 180px;
+    background: radial-gradient(circle at center, rgba(0,40,30,0.6), rgba(0,10,8,0.9));
+    border: 1px solid var(--cyan-dim);
+    border-radius: 50%;
+    box-shadow: 0 0 30px rgba(0,240,200,0.25), inset 0 0 40px rgba(0,240,200,0.1);
+    overflow: hidden;
+  }
+  .hud-radar::before, .hud-radar::after {
+    content: "";
+    position: absolute;
+    top: 50%; left: 50%;
+    border: 1px solid rgba(0,240,200,0.25);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+  }
+  .hud-radar::before { width: 60%; height: 60%; }
+  .hud-radar::after { width: 30%; height: 30%; }
+  .radar-cross {
+    position: absolute; inset: 0;
+  }
+  .radar-cross::before, .radar-cross::after {
+    content: "";
+    position: absolute;
+    background: rgba(0,240,200,0.2);
+  }
+  .radar-cross::before { top: 50%; left: 0; right: 0; height: 1px; }
+  .radar-cross::after { left: 50%; top: 0; bottom: 0; width: 1px; }
+  .radar-sweep {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 50%;
+    height: 2px;
+    transform-origin: left center;
+    background: linear-gradient(90deg, rgba(0,240,200,0.9), transparent);
+    box-shadow: 0 0 10px var(--cyan);
+    animation: sweep 4s linear infinite;
+  }
+  .radar-sweep::before {
+    content: "";
+    position: absolute;
+    top: -90px;
+    left: 0;
+    width: 100%;
+    height: 180px;
+    background: conic-gradient(from 0deg, rgba(0,240,200,0.3), transparent 45deg);
+    transform-origin: 0 50%;
+  }
+  @keyframes sweep {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  .radar-blip {
+    position: absolute;
+    width: 6px; height: 6px;
+    background: var(--blood);
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--blood);
+    animation: blipFade 4s infinite;
+  }
+  @keyframes blipFade {
+    0%, 100% { opacity: 0; }
+    20%, 80% { opacity: 1; }
+  }
+  .hud-radar .label {
+    position: absolute;
+    bottom: 8px; left: 0; right: 0;
+    text-align: center;
+    font-size: 8px;
+    color: var(--cyan-dim);
+    letter-spacing: 0.2em;
+  }
+  .hud-radar .corners {
+    position: absolute;
+    top: 6px; left: 6px;
+    font-size: 7px;
+    color: var(--magenta);
+    letter-spacing: 0.15em;
+  }
+  .hud-radar .corners.r {
+    left: auto;
+    right: 6px;
+    color: var(--amber);
+  }
+
+  /* Bottom-left: command log */
+  .hud-log {
+    bottom: 38px;
+    left: 80px;
+    width: 240px;
+    height: 140px;
+    background: rgba(0,0,0,0.75);
+    border: 1px solid var(--cyan-dim);
+    padding: 8px 12px;
+    overflow: hidden;
+    font-size: 9px;
+    box-shadow: 0 0 20px rgba(0,240,200,0.15);
+  }
+  .hud-log .h {
+    color: var(--magenta);
+    letter-spacing: 0.2em;
+    border-bottom: 1px dashed var(--steel);
+    padding-bottom: 5px;
+    margin-bottom: 6px;
+    font-size: 9px;
+    text-shadow: 0 0 6px rgba(255,46,126,0.4);
+  }
+  .hud-log .h::before { content: "▶ "; color: var(--cyan); }
+  .hud-log .lines {
+    color: var(--bone-dim);
+    line-height: 1.6;
+    font-size: 9px;
+  }
+  .hud-log .lines div { margin-bottom: 2px; }
+  .hud-log .lines .ok { color: var(--cyan); }
+  .hud-log .lines .warn { color: var(--amber); }
+  .hud-log .lines .err { color: var(--blood); }
+  .hud-log .lines .new {
+    animation: typeIn 0.4s ease-out;
+  }
+  @keyframes typeIn {
+    from { opacity: 0; transform: translateX(-10px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  /* Bottom-right: subject card */
+  .hud-subject {
+    bottom: 38px;
+    right: 80px;
+    width: 220px;
+    background: rgba(0,0,0,0.75);
+    border: 1px solid var(--cyan-dim);
+    padding: 10px 12px;
+    box-shadow: 0 0 20px rgba(0,240,200,0.15);
+  }
+  .hud-subject .h {
+    font-size: 9px;
+    color: var(--magenta);
+    letter-spacing: 0.2em;
+    border-bottom: 1px dashed var(--steel);
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+    text-shadow: 0 0 6px rgba(255,46,126,0.4);
+  }
+  .hud-subject .body {
+    display: flex;
+    gap: 10px;
+    font-size: 9px;
+  }
+  .hud-subject .portrait {
+    width: 50px;
+    height: 60px;
+    flex-shrink: 0;
+    background: #0a1418;
+    border: 1px solid var(--steel);
+    position: relative;
+    overflow: hidden;
+  }
+  .hud-subject .portrait svg {
+    width: 100%;
+    height: 100%;
+    color: var(--cyan-dim);
+  }
+  .hud-subject .portrait::after {
+    content: "";
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent 0 2px, rgba(0,240,200,0.06) 2px 3px);
+  }
+  .hud-subject .info {
+    flex: 1;
+    color: var(--bone-dim);
+    line-height: 1.5;
+  }
+  .hud-subject .info b { color: var(--cyan); font-weight: normal; }
+  .hud-subject .info .id { color: var(--amber); }
+  .hud-subject .info .stat { color: var(--blood); }
+
+  /* Floating ASCII rain in far edges */
+  .ascii-rain {
+    position: fixed;
+    top: 30px;
+    bottom: 30px;
+    width: 16px;
+    overflow: hidden;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    line-height: 1.2;
+    color: var(--cyan-dim);
+    opacity: 0.35;
+    z-index: 130;
+    pointer-events: none;
+  }
+  .ascii-rain.l { left: 4px; }
+  .ascii-rain.r { right: 4px; }
+  .ascii-rain .col {
+    animation: rainFall 12s linear infinite;
+  }
+  .ascii-rain.r .col { animation-duration: 16s; animation-delay: -4s; }
+  @keyframes rainFall {
+    from { transform: translateY(-50%); }
+    to { transform: translateY(0%); }
+  }
+
+  /* Floating crosshair / target reticle */
+  .reticle {
+    position: fixed;
+    top: 50%; left: 50%;
+    width: 14px; height: 14px;
+    margin: -7px 0 0 -7px;
+    z-index: 145;
+    pointer-events: none;
+    opacity: 0;
+  }
+  .reticle::before, .reticle::after {
+    content: "";
+    position: absolute;
+    background: var(--blood);
+    box-shadow: 0 0 4px var(--blood);
+  }
+  .reticle::before { left: 50%; top: 0; bottom: 0; width: 1px; margin-left: -0.5px; }
+  .reticle::after { top: 50%; left: 0; right: 0; height: 1px; margin-top: -0.5px; }
+
+  /* Hide HUD panels on smaller screens to keep it readable */
+  @media (max-width: 1100px) {
+    .hud-vitals, .hud-radar, .hud-log, .hud-subject { display: none; }
+  }
+  @media (max-width: 800px) {
+    .ascii-rain { display: none; }
+    .ticker-bar { font-size: 8px; height: 18px; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- TOP TICKER -->
+  <div class="imm ticker-bar">
+    <div class="ticker-track" id="topTicker"></div>
+  </div>
+
+  <!-- BOTTOM TICKER -->
+  <div class="imm ticker-bar bottom">
+    <div class="ticker-track" id="botTicker"></div>
+  </div>
+
+  <!-- VITALS HUD -->
+  <div class="imm hud-vitals">
+    <div class="h">// SUBJECT VITALS</div>
+    <div class="row"><span>HEART RATE</span><b id="vHr">— BPM</b></div>
+    <div class="row"><span>NEURAL LOAD</span><b id="vNl">— %</b></div>
+    <div class="row"><span>CORE TEMP</span><b id="vCt">— °C</b></div>
+    <div class="row"><span>O2 SAT</span><b id="vO2">— %</b></div>
+    <div class="row"><span>COMPLIANCE</span><b id="vCp">SCANNING</b></div>
+    <div class="ekg">
+      <svg viewBox="0 0 200 30" preserveAspectRatio="none">
+        <g class="ekg-line">
+          <polyline points="0,15 20,15 25,15 28,5 32,25 36,15 60,15 80,15 85,15 88,5 92,25 96,15 120,15 140,15 145,15 148,5 152,25 156,15 180,15 200,15 220,15 225,15 228,5 232,25 236,15 260,15 280,15 285,15 288,5 292,25 296,15 320,15 340,15 345,15 348,5 352,25 356,15 380,15 400,15"
+            fill="none" stroke="#00f0c8" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <!-- RADAR HUD -->
+  <div class="imm hud-radar">
+    <div class="corners">SCAN-7</div>
+    <div class="corners r">RNG 4.2KM</div>
+    <div class="radar-cross"></div>
+    <div class="radar-sweep"></div>
+    <div class="radar-blip" style="top:30%; left:60%; animation-delay:0s"></div>
+    <div class="radar-blip" style="top:65%; left:25%; animation-delay:1.2s"></div>
+    <div class="radar-blip" style="top:45%; left:70%; animation-delay:2.5s"></div>
+    <div class="radar-blip" style="top:20%; left:35%; animation-delay:3.4s"></div>
+    <div class="radar-blip" style="top:75%; left:55%; animation-delay:0.8s"></div>
+    <div class="label">PROXIMITY GRID // ACTIVE</div>
+  </div>
+
+  <!-- COMMAND LOG HUD -->
+  <div class="imm hud-log">
+    <div class="h">SYSTEM.LOG // NODE-1138</div>
+    <div class="lines" id="logLines">
+      <div class="ok">[00:00] kernel init OK</div>
+      <div>[00:01] thought-net online</div>
+      <div class="warn">[00:02] dissent flagged: 0x7f</div>
+      <div>[00:03] reroute citizen 4471</div>
+    </div>
+  </div>
+
+  <!-- SUBJECT CARD HUD -->
+  <div class="imm hud-subject">
+    <div class="h">// CITIZEN PROFILE</div>
+    <div class="body">
+      <div class="portrait">
+        <svg viewBox="0 0 50 60" fill="none" stroke="currentColor" stroke-width="1">
+          <circle cx="25" cy="20" r="10"/>
+          <path d="M 8 60 Q 8 38 25 38 Q 42 38 42 60"/>
+          <line x1="14" y1="18" x2="22" y2="18"/>
+          <line x1="28" y1="18" x2="36" y2="18"/>
+        </svg>
+      </div>
+      <div class="info">
+        <div>ID <span class="id">847-Δ-2261</span></div>
+        <div>NAME <b>[REDACTED]</b></div>
+        <div>SECTOR <b>7-EAST</b></div>
+        <div>RANK <b>ζ-9</b></div>
+        <div>STATUS <span class="stat">MONITORED</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ASCII RAIN COLUMNS -->
+  <div class="imm ascii-rain l"><div class="col" id="rainL"></div></div>
+  <div class="imm ascii-rain r"><div class="col" id="rainR"></div></div>
+
+  <!-- RETICLE -->
+  <div class="imm reticle"></div>
+
+  <!-- LEFT EDGE -->
+  <aside class="edge left">
+    <!-- All-seeing eye -->
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+      <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/>
+      <circle cx="12" cy="12" r="3" fill="currentColor"/>
+      <circle cx="12" cy="12" r="1" fill="#000"/>
+    </svg>
+    <!-- Barcode -->
+    <div class="barcode">
+      <span style="height:2px"></span><span style="height:1px"></span><span style="height:3px"></span>
+      <span style="height:1px"></span><span style="height:2px"></span><span style="height:4px"></span>
+      <span style="height:1px"></span><span style="height:2px"></span><span style="height:1px"></span>
+      <span style="height:3px"></span><span style="height:1px"></span><span style="height:2px"></span>
+    </div>
+    <!-- Biohazard -->
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" class="icon-amber">
+      <circle cx="12" cy="12" r="2.5"/>
+      <path d="M12 9.5 C 12 6, 9 4, 6 5.5 C 4 7, 4.5 10, 7 11"/>
+      <path d="M12 9.5 C 12 6, 15 4, 18 5.5 C 20 7, 19.5 10, 17 11"/>
+      <path d="M9.5 13.5 C 7 14, 5 17, 7 19.5 C 9 21.5, 12 20, 12 17"/>
+      <path d="M14.5 13.5 C 17 14, 19 17, 17 19.5 C 15 21.5, 12 20, 12 17"/>
+    </svg>
+    <!-- Vertical text -->
+    <div class="vbar">SECTOR-7 // AUTH ζ-9</div>
+    <!-- Pyramid eye -->
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" class="icon-magenta">
+      <path d="M12 3 L22 21 L2 21 Z"/>
+      <path d="M7 18 L17 18"/>
+      <circle cx="12" cy="14" r="2.2" fill="currentColor"/>
+    </svg>
+    <!-- Skull -->
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+      <path d="M5 11 C 5 6, 8 4, 12 4 C 16 4, 19 6, 19 11 L19 15 L16 15 L16 18 L14 18 L14 15 L10 15 L10 18 L8 18 L8 15 L5 15 Z"/>
+      <circle cx="9" cy="11" r="1.3" fill="currentColor"/>
+      <circle cx="15" cy="11" r="1.3" fill="currentColor"/>
+      <path d="M11 17 L13 17"/>
+    </svg>
+  </aside>
+
+  <!-- RIGHT EDGE -->
+  <aside class="edge right">
+    <!-- Surveillance camera -->
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" class="icon-blood">
+      <rect x="3" y="8" width="13" height="6" rx="0.5"/>
+      <path d="M16 10 L21 8 L21 14 L16 12 Z" fill="currentColor"/>
+      <circle cx="6" cy="11" r="1.2" fill="currentColor" class="blink"/>
+      <path d="M9 14 L9 18 L7 21 L11 21 L9 18"/>
+    </svg>
+    <!-- Radiation -->
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" class="icon-amber">
+      <circle cx="12" cy="12" r="2"/>
+      <path d="M12 4 L8 11 L4 8.5 Z" fill="currentColor"/>
+      <path d="M20 8.5 L16 11 L12 4 Z" fill="currentColor"/>
+      <path d="M6 20 L12 14 L18 20 Z" fill="currentColor"/>
+    </svg>
+    <!-- Vertical text -->
+    <div class="vbar">CONTROL // OBEY // CONSUME</div>
+    <!-- Locked padlock with circuit -->
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+      <rect x="5" y="11" width="14" height="10" rx="0.5"/>
+      <path d="M8 11 V 8 C 8 5, 10 4, 12 4 C 14 4, 16 5, 16 8 V 11"/>
+      <circle cx="12" cy="15" r="1.5" fill="currentColor"/>
+      <path d="M12 16.5 V 18.5"/>
+    </svg>
+    <!-- Crossed-out human (depopulation symbol) -->
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" class="icon-magenta">
+      <circle cx="12" cy="6" r="2.5"/>
+      <path d="M12 9 V 16"/>
+      <path d="M8 12 L16 12"/>
+      <path d="M12 16 L8 21"/>
+      <path d="M12 16 L16 21"/>
+      <path d="M3 3 L21 21" stroke-width="1.5"/>
+    </svg>
+    <!-- Antenna/broadcast -->
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+      <path d="M12 14 L9 21 L15 21 Z" fill="currentColor"/>
+      <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+      <path d="M8 12 C 8 9, 10 7, 12 7 C 14 7, 16 9, 16 12"/>
+      <path d="M5 12 C 5 7, 8 4, 12 4 C 16 4, 19 7, 19 12"/>
+    </svg>
+  </aside>
+
+  <header>
+    <h1>Dystopian Sci-Fi Movie Picker</h1>
+  </header>
+  <div class="stage">
+    <span class="bracket-bl"></span>
+    <span class="bracket-br"></span>
+    <div class="pointer-housing">
+      <div class="pointer-light"></div>
+      <div class="pointer"></div>
+    </div>
+    <div class="wheel-wrap">
+      <svg class="wheel" id="wheel" viewBox="-250 -250 500 500"></svg>
+    </div>
+    <div class="hub">
+      <svg viewBox="-65 -65 130 130" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="flesh" cx="40%" cy="35%">
+            <stop offset="0%" stop-color="#6b1020"/>
+            <stop offset="40%" stop-color="#3a0810"/>
+            <stop offset="100%" stop-color="#0a0204"/>
+          </radialGradient>
+          <radialGradient id="iris" cx="50%" cy="50%">
+            <stop offset="0%" stop-color="#00f0c8"/>
+            <stop offset="30%" stop-color="#00a088"/>
+            <stop offset="70%" stop-color="#003830"/>
+            <stop offset="100%" stop-color="#000"/>
+          </radialGradient>
+          <radialGradient id="sclera" cx="45%" cy="40%">
+            <stop offset="0%" stop-color="#e8d8b0"/>
+            <stop offset="60%" stop-color="#c8a080"/>
+            <stop offset="100%" stop-color="#6a3020"/>
+          </radialGradient>
+          <filter id="goo">
+            <feGaussianBlur stdDeviation="0.4"/>
+          </filter>
+        </defs>
+
+        <!-- Outer fleshy socket ring -->
+        <circle cx="0" cy="0" r="62" fill="url(#flesh)" stroke="#2a0408" stroke-width="0.8"/>
+
+        <!-- Nerve filaments twitching around rim (behind eye) -->
+        <g class="nerve-group">
+          <path d="M -55 -20 Q -48 -30 -42 -22 Q -38 -14 -44 -8" fill="none" stroke="#5a0814" stroke-width="1.2" opacity="0.8"/>
+          <path d="M 52 -24 Q 46 -32 38 -26 Q 34 -18 40 -12" fill="none" stroke="#5a0814" stroke-width="1.2" opacity="0.8"/>
+          <path d="M -48 28 Q -40 38 -32 30 Q -28 22 -36 16" fill="none" stroke="#5a0814" stroke-width="1.2" opacity="0.8"/>
+          <path d="M 46 32 Q 38 42 30 34 Q 26 26 34 20" fill="none" stroke="#5a0814" stroke-width="1.2" opacity="0.8"/>
+          <path d="M 0 -58 Q 4 -50 -2 -44 Q -8 -40 -4 -34" fill="none" stroke="#5a0814" stroke-width="1" opacity="0.7"/>
+          <path d="M -2 58 Q 2 50 -4 44 Q -10 40 -6 34" fill="none" stroke="#5a0814" stroke-width="1" opacity="0.7"/>
+        </g>
+
+        <!-- Pulsing veins across the flesh -->
+        <g fill="none" stroke="#8a1020" stroke-width="0.6" stroke-linecap="round">
+          <path class="vein" d="M -52 0 Q -42 -6 -38 0 Q -34 6 -28 2"/>
+          <path class="vein delay" d="M 50 2 Q 40 -6 36 2 Q 32 8 26 4"/>
+          <path class="vein delay2" d="M -18 -50 Q -10 -42 -4 -48 Q 2 -52 8 -46"/>
+          <path class="vein delay" d="M -22 48 Q -14 42 -6 46 Q 2 50 10 44"/>
+          <path class="vein" d="M 30 -42 Q 22 -34 28 -28"/>
+          <path class="vein delay2" d="M -30 42 Q -22 34 -28 28"/>
+        </g>
+
+        <!-- Tubes/wires plugging into the socket from outside -->
+        <g>
+          <path class="blood-line" d="M -62 -40 L -44 -28" stroke="#ff003c" stroke-width="1.8" fill="none"/>
+          <path class="blood-line" d="M 62 -40 L 44 -28" stroke="#ff003c" stroke-width="1.8" fill="none" style="animation-delay:0.3s"/>
+          <path class="blood-line" d="M -62 40 L -44 28" stroke="#00f0c8" stroke-width="1.2" fill="none" style="animation-delay:0.6s"/>
+          <path class="blood-line" d="M 62 40 L 44 28" stroke="#00f0c8" stroke-width="1.2" fill="none" style="animation-delay:0.9s"/>
+          <circle cx="-62" cy="-40" r="2.5" fill="#3a0810" stroke="#1a0208" stroke-width="0.5"/>
+          <circle cx="62" cy="-40" r="2.5" fill="#3a0810" stroke="#1a0208" stroke-width="0.5"/>
+          <circle cx="-62" cy="40" r="2.5" fill="#2a3540" stroke="#1a0208" stroke-width="0.5"/>
+          <circle cx="62" cy="40" r="2.5" fill="#2a3540" stroke="#1a0208" stroke-width="0.5"/>
+        </g>
+
+        <!-- Metallic retaining ring around eye -->
+        <circle cx="0" cy="0" r="38" fill="none" stroke="#2a3540" stroke-width="2"/>
+        <circle cx="0" cy="0" r="38" fill="none" stroke="#00a088" stroke-width="0.4" stroke-dasharray="2 3"/>
+
+        <!-- Screws in the ring -->
+        <circle cx="0" cy="-38" r="2" fill="#4a5560" stroke="#000" stroke-width="0.4"/>
+        <circle cx="38" cy="0" r="2" fill="#4a5560" stroke="#000" stroke-width="0.4"/>
+        <circle cx="0" cy="38" r="2" fill="#4a5560" stroke="#000" stroke-width="0.4"/>
+        <circle cx="-38" cy="0" r="2" fill="#4a5560" stroke="#000" stroke-width="0.4"/>
+
+        <!-- Sclera (eyeball white - bloodshot) -->
+        <circle cx="0" cy="0" r="34" fill="url(#sclera)"/>
+
+        <!-- Bloodshot veins in sclera -->
+        <g fill="none" stroke="#8a0812" stroke-width="0.5" stroke-linecap="round" opacity="0.9">
+          <path d="M -32 -6 Q -24 -10 -18 -4 Q -14 2 -10 -2"/>
+          <path d="M 32 4 Q 24 0 18 6 Q 14 12 10 8"/>
+          <path d="M -4 -32 Q 0 -24 -6 -18 Q -12 -14 -8 -10"/>
+          <path d="M 6 32 Q 2 24 8 18 Q 14 14 10 10"/>
+          <path d="M -28 14 Q -20 18 -16 12"/>
+          <path d="M 28 -14 Q 20 -18 16 -12"/>
+        </g>
+
+        <!-- Iris -->
+        <circle cx="0" cy="0" r="20" fill="url(#iris)"/>
+
+        <!-- Iris detail lines -->
+        <g stroke="#00f0c8" stroke-width="0.3" opacity="0.6">
+          <line x1="0" y1="-20" x2="0" y2="-8"/>
+          <line x1="0" y1="20" x2="0" y2="8"/>
+          <line x1="-20" y1="0" x2="-8" y2="0"/>
+          <line x1="20" y1="0" x2="8" y2="0"/>
+          <line x1="-14" y1="-14" x2="-6" y2="-6"/>
+          <line x1="14" y1="-14" x2="6" y2="-6"/>
+          <line x1="-14" y1="14" x2="-6" y2="6"/>
+          <line x1="14" y1="14" x2="6" y2="6"/>
+        </g>
+
+        <!-- Pupil -->
+        <circle class="pupil" cx="0" cy="0" r="10" fill="#000"/>
+
+        <!-- Highlight glint -->
+        <ellipse cx="-6" cy="-8" rx="3" ry="2" fill="#fff" opacity="0.85"/>
+        <circle cx="4" cy="4" r="1" fill="#fff" opacity="0.5"/>
+
+        <!-- GERMS — crawl around the socket, squirming as they go -->
+        <defs>
+          <radialGradient id="germGlow" cx="50%" cy="50%">
+            <stop offset="0%" stop-color="#aaff44"/>
+            <stop offset="50%" stop-color="#4aa015"/>
+            <stop offset="100%" stop-color="#1a4008"/>
+          </radialGradient>
+          <filter id="germBlur" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="0.3"/>
+          </filter>
+        </defs>
+
+        <!-- Germ 1: amoeba blob with flagellum -->
+        <g class="germ-wrap-1">
+          <g class="germ-body-a" filter="url(#germBlur)">
+            <ellipse cx="0" cy="0" rx="4.5" ry="3" fill="url(#germGlow)" stroke="#6ac020" stroke-width="0.4"/>
+            <circle cx="-1" cy="-0.5" r="1" fill="#1a3008"/>
+            <circle cx="1.5" cy="0.8" r="0.7" fill="#1a3008"/>
+            <path class="germ-tail" d="M 4 0 Q 7 -1 9 0 Q 11 1 13 -0.5" fill="none" stroke="#6ac020" stroke-width="0.6"/>
+          </g>
+        </g>
+
+        <!-- Germ 2: rod bacterium, bigger -->
+        <g class="germ-wrap-2">
+          <g class="germ-body-b" filter="url(#germBlur)">
+            <ellipse cx="0" cy="0" rx="5.5" ry="2.2" fill="url(#germGlow)" stroke="#6ac020" stroke-width="0.4"/>
+            <ellipse cx="-2" cy="0" rx="0.8" ry="0.8" fill="#1a3008"/>
+            <ellipse cx="0.5" cy="0.3" rx="0.6" ry="0.6" fill="#1a3008"/>
+            <ellipse cx="2.5" cy="-0.2" rx="0.7" ry="0.7" fill="#1a3008"/>
+            <path class="germ-tail" d="M 5 0 Q 8 1 10 -1 Q 12 -2 14 0" fill="none" stroke="#6ac020" stroke-width="0.5"/>
+          </g>
+        </g>
+
+        <!-- Germ 3: small lumpy cluster -->
+        <g class="germ-wrap-3">
+          <g class="germ-body-c" filter="url(#germBlur)">
+            <circle cx="-1.5" cy="0" r="2" fill="url(#germGlow)" stroke="#6ac020" stroke-width="0.3"/>
+            <circle cx="1.5" cy="-0.5" r="1.8" fill="url(#germGlow)" stroke="#6ac020" stroke-width="0.3"/>
+            <circle cx="0" cy="1.5" r="1.5" fill="url(#germGlow)" stroke="#6ac020" stroke-width="0.3"/>
+            <circle cx="-1" cy="-0.3" r="0.5" fill="#1a3008"/>
+            <circle cx="1.5" cy="-0.5" r="0.5" fill="#1a3008"/>
+          </g>
+        </g>
+
+        <!-- Germ 4: spiky virus-looking thing -->
+        <g class="germ-wrap-4">
+          <g class="germ-body-a" filter="url(#germBlur)">
+            <circle cx="0" cy="0" r="3.5" fill="url(#germGlow)" stroke="#6ac020" stroke-width="0.4"/>
+            <line x1="0" y1="-3.5" x2="0" y2="-6" stroke="#6ac020" stroke-width="0.6"/>
+            <line x1="0" y1="3.5" x2="0" y2="6" stroke="#6ac020" stroke-width="0.6"/>
+            <line x1="-3.5" y1="0" x2="-6" y2="0" stroke="#6ac020" stroke-width="0.6"/>
+            <line x1="3.5" y1="0" x2="6" y2="0" stroke="#6ac020" stroke-width="0.6"/>
+            <line x1="-2.5" y1="-2.5" x2="-4.5" y2="-4.5" stroke="#6ac020" stroke-width="0.6"/>
+            <line x1="2.5" y1="-2.5" x2="4.5" y2="-4.5" stroke="#6ac020" stroke-width="0.6"/>
+            <line x1="-2.5" y1="2.5" x2="-4.5" y2="4.5" stroke="#6ac020" stroke-width="0.6"/>
+            <line x1="2.5" y1="2.5" x2="4.5" y2="4.5" stroke="#6ac020" stroke-width="0.6"/>
+            <circle cx="-0.8" cy="-0.5" r="0.6" fill="#1a3008"/>
+            <circle cx="0.8" cy="0.5" r="0.6" fill="#1a3008"/>
+          </g>
+        </g>
+
+        <!-- Germ 5: wormy thing with whipping tail -->
+        <g class="germ-wrap-5">
+          <g class="germ-body-b" filter="url(#germBlur)">
+            <ellipse cx="0" cy="0" rx="6" ry="1.8" fill="url(#germGlow)" stroke="#6ac020" stroke-width="0.4"/>
+            <circle cx="-3" cy="0" r="0.5" fill="#1a3008"/>
+            <circle cx="0" cy="0" r="0.5" fill="#1a3008"/>
+            <circle cx="3" cy="0" r="0.5" fill="#1a3008"/>
+            <path class="germ-tail" d="M 6 0 Q 9 2 11 -1 Q 13 -3 15 0 Q 17 2 18 0" fill="none" stroke="#6ac020" stroke-width="0.5"/>
+          </g>
+        </g>
+      </svg>
+    </div>
+    <div class="bolt" style="top: 2%; left: 50%; transform: translateX(-50%);"></div>
+    <div class="bolt" style="top: 50%; left: 2%; transform: translateY(-50%);"></div>
+    <div class="bolt" style="top: 50%; right: 2%; transform: translateY(-50%);"></div>
+    <div class="bolt" style="bottom: 2%; left: 50%; transform: translateX(-50%);"></div>
+    <div class="bolt" style="top: 14%; left: 14%;"></div>
+    <div class="bolt" style="top: 14%; right: 14%;"></div>
+    <div class="bolt" style="bottom: 14%; left: 14%;"></div>
+    <div class="bolt" style="bottom: 14%; right: 14%;"></div>
+  </div>
+  <div class="controls">
+    <button id="spinBtn">Initiate Spin</button>
+    <button id="seriesBtn" class="danger">Resolve Sub-Unit</button>
+  </div>
+  <div class="terminal empty" id="terminal">
+    <div class="terminal-body">
+      <div class="title">— NULL —</div>
+      <div class="meta">no signal</div>
+    </div>
+  </div>
+<script>
+const ENTRIES = [
+  { title: "The Matrix", year: "1999", series: ["The Matrix (1999)", "The Matrix Reloaded (2003)", "The Matrix Revolutions (2003)", "The Matrix Resurrections (2021)"] },
+  { title: "Brazil", year: "1985" },
+  { title: "Children of Men", year: "2006" },
+  { title: "A Clockwork Orange", year: "1971" },
+  { title: "RoboCop", year: "1987", series: ["RoboCop (1987)", "RoboCop 2 (1990)", "RoboCop 3 (1993)", "RoboCop (2014)"] },
+  { title: "1984", year: "1984" },
+  { title: "Blade Runner", year: "1982", series: ["Blade Runner (1982)", "Blade Runner 2049 (2017)"] },
+  { title: "The Running Man", year: "1987" },
+  { title: "Snowpiercer", year: "2013" },
+  { title: "Gattaca", year: "1997" },
+  { title: "Total Recall", year: "1990" },
+  { title: "Minority Report", year: "2002" },
+  { title: "Judge Dredd", year: "1995/2012", series: ["Judge Dredd (1995)", "Dredd (2012)"] },
+  { title: "District 9", year: "2009" },
+  { title: "Idiocracy", year: "2006" },
+  { title: "Soylent Green", year: "1973" },
+  { title: "Logan's Run", year: "1976" },
+  { title: "THX 1138", year: "1971" },
+  { title: "Escape from New York", year: "1981" },
+  { title: "Strange Days", year: "1995" },
+  { title: "Dark City", year: "1998" },
+  { title: "A.I. Artificial Intelligence", year: "2001" },
+  { title: "The Truman Show", year: "1998" },
+  { title: "Videodrome", year: "1983" },
+  { title: "A Scanner Darkly", year: "2006" },
+  { title: "Silent Running", year: "1972" },
+  { title: "Sleeper", year: "1973" },
+  { title: "Punishment Park", year: "1971" },
+  { title: "Never Let Me Go", year: "2010" },
+  { title: "Dual", year: "2022" },
+  { title: "Equilibrium", year: "2002" },
+  { title: "Moon", year: "2009" },
+  { title: "The Book of Eli", year: "2010" },
+  { title: "12 Monkeys", year: "1995" },
+  { title: "Alita: Battle Angel", year: "2019" },
+  { title: "Automata", year: "2014" },
+  { title: "Chappie", year: "2015" },
+  { title: "Cherry 2000", year: "1987" },
+  { title: "Blindness", year: "2008" },
+  { title: "The Lobster", year: "2015" },
+  { title: "Seconds", year: "1966" },
+  { title: "Planet of the Apes", year: "1968", series: ["Planet of the Apes (1968)", "Beneath the Planet of the Apes (1970)", "Escape from the Planet of the Apes (1971)", "Conquest of the Planet of the Apes (1972)", "Battle for the Planet of the Apes (1973)", "Planet of the Apes (2001)", "Rise of the Planet of the Apes (2011)", "Dawn of the Planet of the Apes (2014)", "War for the Planet of the Apes (2017)"] },
+  { title: "Mad Max: Fury Road", year: "2015", series: ["Mad Max (1979)", "Mad Max 2: The Road Warrior (1981)", "Mad Max Beyond Thunderdome (1985)", "Mad Max: Fury Road (2015)", "Furiosa: A Mad Max Saga (2024)"] },
+  { title: "V for Vendetta", year: "2005" },
+  { title: "Elysium", year: "2013" },
+  { title: "The Fifth Element", year: "1997" },
+  { title: "The Terminator", year: "1984", series: ["The Terminator (1984)", "Terminator 2: Judgment Day (1991)", "Terminator 3: Rise of the Machines (2003)", "Terminator Salvation (2009)", "Terminator Genisys (2015)", "Terminator: Dark Fate (2019)"] },
+  { title: "The Road", year: "2009" },
+  { title: "Fahrenheit 451", year: "1966" },
+  { title: "Rollerball", year: "1975" },
+  { title: "Westworld", year: "1973" },
+  { title: "The Omega Man", year: "1971" },
+  { title: "Zardoz", year: "1974" },
+  { title: "The Stepford Wives", year: "1975" },
+  { title: "Invasion of the Body Snatchers", year: "1978" },
+  { title: "The Handmaid's Tale", year: "1990" },
+  { title: "Demolition Man", year: "1993" },
+  { title: "The Island", year: "2005" },
+  { title: "I Am Legend", year: "2007" },
+  { title: "In Time", year: "2011" },
+  { title: "The Purge", year: "2013", series: ["The Purge (2013)", "The Purge: Anarchy (2014)", "The Purge: Election Year (2016)", "The First Purge (2018)", "The Forever Purge (2021)"] },
+  { title: "Divergent", year: "2014", series: ["Divergent (2014)", "Insurgent (2015)", "Allegiant (2016)"] },
+  { title: "The Hunger Games", year: "2012", series: ["The Hunger Games (2012)", "Catching Fire (2013)", "Mockingjay Part 1 (2014)", "Mockingjay Part 2 (2015)", "The Ballad of Songbirds & Snakes (2023)"] },
+  { title: "Brave New World", year: "1980" },
+  { title: "The Blood of Heroes", year: "1989" },
+  { title: "Æon Flux", year: "2005" },
+  { title: "The Postman", year: "1997" },
+  { title: "X-Men: Days of Future Past", year: "2014", series: ["X-Men: Days of Future Past (2014)", "X-Men: Apocalypse (2016)", "Logan (2017)"] },
+  { title: "Starship Troopers", year: "1997" },
+  { title: "The Lathe of Heaven", year: "1980" },
+  { title: "Surrogates", year: "2009" },
+  { title: "eXistenZ", year: "1999" },
+  { title: "The Quiet Earth", year: "1985" },
+  { title: "High-Rise", year: "2015" },
+  { title: "Looper", year: "2012" }
+];
+
+const PALETTE = ["#0a1418", "#1a0a18", "#0a1818", "#180a14", "#0a0f1c", "#1c0a0f", "#0f1c18", "#181c0a"];
+const ACCENT_EVERY = 7;
+const ACCENTS = ["#ff2e7e", "#00f0c8", "#ffb000"];
+const TEXT = "#c8d4dc";
+
+const wheel = document.getElementById("wheel");
+const N = ENTRIES.length;
+const seg = 360 / N;
+const R = 240;
+const INNER = 52;
+
+function polar(angle, r) {
+  const rad = (angle - 90) * Math.PI / 180;
+  return [r * Math.cos(rad), r * Math.sin(rad)];
+}
+
+let svg = "";
+svg += `<circle cx="0" cy="0" r="${R}" fill="none" stroke="#1a2530" stroke-width="0.5"/>`;
+svg += `<circle cx="0" cy="0" r="${R - 18}" fill="none" stroke="#1a2530" stroke-width="0.3" stroke-dasharray="2 4"/>`;
+
+for (let i = 0; i < N; i++) {
+  const a0 = i * seg;
+  const a1 = (i + 1) * seg;
+  const [x0, y0] = polar(a0, R);
+  const [x1, y1] = polar(a1, R);
+  const [ix0, iy0] = polar(a0, INNER);
+  const [ix1, iy1] = polar(a1, INNER);
+  const large = seg > 180 ? 1 : 0;
+  let fill = PALETTE[i % PALETTE.length];
+  let isAccent = false;
+  if (i % ACCENT_EVERY === 0) {
+    fill = ACCENTS[(i / ACCENT_EVERY) % ACCENTS.length];
+    isAccent = true;
+  }
+  const path = `M ${ix0} ${iy0} L ${x0} ${y0} A ${R} ${R} 0 ${large} 1 ${x1} ${y1} L ${ix1} ${iy1} A ${INNER} ${INNER} 0 ${large} 0 ${ix0} ${iy0} Z`;
+  svg += `<path d="${path}" fill="${fill}" stroke="#000" stroke-width="0.6" opacity="${isAccent ? 0.85 : 1}"/>`;
+
+  const mid = a0 + seg / 2;
+  const [nx, ny] = polar(mid, INNER + 8);
+  const numRotate = mid > 180 ? mid + 90 : mid - 90;
+  const numFlip = mid > 180 ? "rotate(180)" : "";
+  svg += `<g transform="translate(${nx} ${ny}) rotate(${numRotate})"><text ${numFlip ? `transform="${numFlip}"` : ""} x="0" y="2" font-family="Orbitron, sans-serif" font-size="6" font-weight="700" fill="${isAccent ? '#000' : '#00a088'}" text-anchor="start">${String(i+1).padStart(3,'0')}</text></g>`;
+
+  const [tx, ty] = polar(mid, INNER + 22);
+  const rotate = mid > 180 ? mid + 90 : mid - 90;
+  const color = isAccent ? "#000" : TEXT;
+  const flip = mid > 180 ? "rotate(180)" : "";
+  const label = ENTRIES[i].title.length > 24 ? ENTRIES[i].title.slice(0, 23) + "…" : ENTRIES[i].title;
+  const upperLabel = label.toUpperCase();
+  svg += `<g transform="translate(${tx} ${ty}) rotate(${rotate})"><text ${flip ? `transform="${flip}"` : ""} x="0" y="3" font-family="Share Tech Mono, monospace" font-size="9" font-weight="400" fill="${color}" text-anchor="start" letter-spacing="0.5">${upperLabel}</text></g>`;
+}
+
+for (let i = 0; i < N; i++) {
+  const a = i * seg;
+  const [x1, y1] = polar(a, R - 6);
+  const [x2, y2] = polar(a, R);
+  svg += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#000" stroke-width="1"/>`;
+}
+svg += `<circle cx="0" cy="0" r="${INNER}" fill="none" stroke="#00f0c8" stroke-width="0.8" opacity="0.5"/>`;
+svg += `<circle cx="0" cy="0" r="${INNER - 4}" fill="none" stroke="#00a088" stroke-width="0.4" stroke-dasharray="1 2"/>`;
+
+wheel.innerHTML = svg;
+
+let currentRotation = 0;
+let lastIndex = -1;
+
+const spinBtn = document.getElementById("spinBtn");
+const seriesBtn = document.getElementById("seriesBtn");
+const terminal = document.getElementById("terminal");
+
+function updateTerminal(prompt, title, meta) {
+  terminal.querySelector(".title").textContent = title;
+  terminal.querySelector(".meta").textContent = meta;
+}
+
+function spin() {
+  const idx = Math.floor(Math.random() * N);
+  const segCenter = idx * seg + seg / 2;
+  const target = -segCenter;
+  const spins = 7;
+  const base = currentRotation - (currentRotation % 360);
+  let next = base + spins * 360 + target;
+  while (next <= currentRotation) next += 360;
+  currentRotation = next;
+  wheel.style.transform = `rotate(${currentRotation}deg)`;
+  lastIndex = idx;
+
+  terminal.classList.remove("revealed");
+  terminal.classList.remove("empty");
+  updateTerminal("Processing", "// SCANNING //", "directive incoming");
+
+  spinBtn.disabled = true;
+  seriesBtn.disabled = true;
+
+  setTimeout(() => {
+    const e = ENTRIES[idx];
+    const unitNum = String(idx + 1).padStart(3, "0");
+    updateTerminal(
+      `Unit ${unitNum} Assigned`,
+      e.title,
+      e.series ? `${e.year} · subroutines available` : `archive ${e.year}`
+    );
+    terminal.classList.add("revealed");
+    spinBtn.disabled = false;
+    seriesBtn.disabled = false;
+  }, 6600);
+}
+
+function resolveSeries() {
+  if (lastIndex < 0) {
+    updateTerminal("Error", "// NO INPUT //", "spin first, citizen");
+    return;
+  }
+  const e = ENTRIES[lastIndex];
+  if (!e.series) {
+    updateTerminal("Standalone Unit", e.title, `${e.year} · no subroutines`);
+    return;
+  }
+  const pick = e.series[Math.floor(Math.random() * e.series.length)];
+  const cleanTitle = pick.replace(/\s*\(\d{4}\)$/, "");
+  const m = pick.match(/\((\d{4})\)$/);
+  updateTerminal(
+    "Subroutine Resolved",
+    cleanTitle,
+    m ? `${m[1]} · ${e.title.toLowerCase()} branch` : `${e.title} branch`
+  );
+  terminal.classList.remove("revealed");
+  void terminal.offsetWidth;
+  terminal.classList.add("revealed");
+}
+
+spinBtn.addEventListener("click", spin);
+seriesBtn.addEventListener("click", resolveSeries);
+</script>
+</body>
+</html>
